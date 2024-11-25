@@ -22,7 +22,7 @@ export function SetLighting(scene, options = {}) {
     const {
         addAxesHelper = true,
         ambientLightIntensity = 0.5, // Slightly brighter ambient light for shadowed areas
-        directionalLightIntensity = 1, // Stronger directional light for a late afternoon sun
+        directionalLightIntensity = 2, // Stronger directional light for a late afternoon sun
         directionalLightPosition = { x: -50, y: 30, z: 20 }, // Low and angled position for a 4 PM sun effect
         directionalLightColor = 0xffffff, // Warm orange color for the sun
     } = options;

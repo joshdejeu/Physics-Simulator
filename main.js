@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Tank } from './gameSetUp/tank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
+import { loadMapAssets } from './gameSetUp/mapLoader.js';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -15,6 +16,13 @@ document.body.appendChild(renderer.domElement);
 SetLighting(scene);
 // Add HDR background
 setBackground(scene, '/textures/skybox/skybox3.jpg');
+
+const xmlFilePath = '/maps/map_stadium.xml';
+loadMapAssets(xmlFilePath, scene).then(() => {
+    console.log('Map assets loaded successfully!');
+}).catch(error => {
+    console.error('Error loading map assets:', error);
+});
 
 const tankModel = {
     hull: "hornet",
