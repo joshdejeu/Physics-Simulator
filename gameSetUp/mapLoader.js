@@ -18,7 +18,9 @@ function createRectangle(width, height, depth, color) {
     const rectangle = new THREE.Mesh(geometry, material);
     return rectangle;
 }
-
+function radiansToDegrees(radians) {
+    return radians * (180 / Math.PI);
+}
 // Function to load the map and filter models
 export function loadMapAssets(xmlFilePathData, scene) {
     return loadXML(xmlFilePathData).then((xmlData) => {
@@ -47,10 +49,10 @@ export function loadMapAssets(xmlFilePathData, scene) {
                         rectangle = createRectangle(5, 0.1, 5, 0x8e8e8e);  // Tile 1x1 model (rectangle)
                         break;
                     case 'WTile 2':
-                        rectangle = createRectangle(5, 1, 5, 0x7c7c7c);  // Outer Wall tiles (scaled to match Tile 1x1 size)
+                        rectangle = createRectangle(5, 0.1, 5, 0x7c7c7c);  // Outer Wall tiles (scaled to match Tile 1x1 size)
                         break;
                     case 'Bridge 1':
-                        rectangle = createRectangle(8, 1, 4, 0x4f4f4f);  // Bridge (scaled up to match proportions)
+                        rectangle = createRectangle(8, 0.1, 4, 0x4f4f4f);  // Bridge (scaled up to match proportions)
                         break;
                     case 'Billboard':
                         rectangle = createRectangle(6, 0.2, 2, 0xff0000);  // Billboard (scaled to size with the other assets)
@@ -62,13 +64,18 @@ export function loadMapAssets(xmlFilePathData, scene) {
                         return;  // Ignore other models
                 }
 
-                if(rectangle){
+                if (rectangle) {
                     // Set the position and rotation of the model
                     rectangle.position.set(position.x, position.y, position.z);
-                    rectangle.rotation.set(0, 0, rotationZ);
+                    if (modelName !== 'Tile 1x1') {
+                        rectangle.rotation.set(0, 0, rotationZ);
+                    }
+                    else {
+                        rectangle.rotation.set(0, 0, 0);
+                    }
                     // Add the rectangle to the scene
                     scene.add(rectangle);
-    
+
                     // Add the promise to the promises array (even though rectangles are immediate)
                     promises.push(Promise.resolve(rectangle));
                 }
