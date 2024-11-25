@@ -1,0 +1,62 @@
+used to generate a circle spawned above the tank
+    test() {
+        // Create a circle geometry using BufferGeometry
+        const radius = 8;
+        const segments = 64;
+        const circleGeometry = new THREE.BufferGeometry();
+        const vertices = [];
+
+        // Create a group to combine cricle and lines
+        this.circle = new THREE.Group();
+
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            const x = radius * Math.cos(angle);
+            const y = radius * Math.sin(angle);
+            vertices.push(x, 0, y); // Push each vertex to the array
+
+
+            // Create a new geometry for the vertical line
+            const lineGeometry = new THREE.BufferGeometry();
+            const vertices2 = [];
+            vertices2.push(x, -1, y); // Start from the circle (x, 0, y)
+            vertices2.push(x, 1, y); // Go upwards (x, 5, y)
+
+            // Set the position attribute for the line
+            lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices2, 3));
+
+            // Create the vertical line using a cylinder
+            const geometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 3); // Small radius for line thickness, height for line length
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            // Create the line material and line
+            const line = new THREE.Mesh(geometry, material);
+            // Position the cylinder at the correct point
+            line.position.set(x, 0, y); // Positioning in the middle of the cylinder's height
+
+            this.circle.add(line);
+        }
+
+        // Set the geometry's attributes
+        circleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+        // Create a material with visible thickness
+        const material = new THREE.LineBasicMaterial({
+            color: 0x00ff00,  // green
+            linewidth: 10      // thickness
+        });
+
+        // Create a line using the geometry and material
+        const greenCircle = new THREE.LineLoop(circleGeometry, material);
+        this.circle.add(greenCircle);
+
+        // Add the circle to the scene
+        this.scene.add(this.circle);
+    }
+
+
+    and position setting on every frame
+            this.circle.position.set(
+            this.tankGroup.position.x,
+            this.tankGroup.position.y + 4,
+            this.tankGroup.position.z
+        );
