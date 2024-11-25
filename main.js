@@ -14,13 +14,13 @@ document.body.appendChild(renderer.domElement);
 // Basic setup with default lighting
 SetLighting(scene);
 // Add HDR background
-setBackground(scene, './textures/skybox/skybox3.jpg');
+setBackground(scene, '/textures/skybox/skybox3.jpg');
 
 const tankModel = {
     hull: "hornet",
     turret: "railgun",
-    hull_texture: { details: "./textures/hornet/lightmap.jpg" },
-    turret_texture: { details: "./textures/railgun/lightmap.jpg" },
+    hull_texture: { details: "/textures/hornet/lightmap.jpg" },
+    turret_texture: { details: "/textures/railgun/lightmap.jpg" },
 }
 
 const tank = new Tank(scene, tankModel, () => {

@@ -18,7 +18,7 @@ export function loadModel(scene, modelFileName, position = { x: 0, y: 0, z: 0 },
             const object = gltf.scene;
             // // Apply a default texture if needed
             // child.material = new THREE.MeshStandardMaterial({
-            //     map: textureLoader.load('./textures/missing.jpg'),
+            //     map: textureLoader.load('/textures/missing.jpg'),
             // });
 
             const texture = loadedTextures.details; // Assuming loadedTextures.details is your texture
