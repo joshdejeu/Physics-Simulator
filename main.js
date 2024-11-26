@@ -1,6 +1,7 @@
 // THREE.js setup for scene, camera, and renderer
 import * as THREE from 'three';
 import { Tank } from './gameSetUp/tank.js';
+import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
 import { loadMapAssets } from './gameSetUp/mapLoader.js';
@@ -17,12 +18,12 @@ SetLighting(scene);
 // Add HDR background
 setBackground(scene, '/textures/skybox/skybox3.jpg');
 
-const xmlFilePath = '/maps/map_stadium.xml';
-loadMapAssets(xmlFilePath, scene).then(() => {
-    console.log('Map assets loaded successfully!');
-}).catch(error => {
-    console.error('Error loading map assets:', error);
-});
+// const xmlFilePath = '/maps/map_stadium.xml';
+// loadMapAssets(xmlFilePath, scene).then(() => {
+//     console.log('Map assets loaded successfully!');
+// }).catch(error => {
+//     console.error('Error loading map assets:', error);
+// });
 
 const tankModel = {
     hull: "hornet",
@@ -31,7 +32,7 @@ const tankModel = {
     turret_texture: { details: "/textures/railgun/lightmap.jpg" },
 }
 
-const tank = new Tank(scene, tankModel, () => {
+const tank = new UserTank(scene, tankModel, () => {
     console.log('Tank loaded and ready!');
     camera.position.set(0, 15, 15); // Position camera behind and above the tank
     camera.lookAt(tank.tankGroup.position); // Set camera to look at the tank's position
@@ -41,6 +42,12 @@ const bot = new Tank(scene, tankModel, () => {
     bot.tankGroup.position.set(-10, 0, -10)
     bot.tankGroup.rotation.set(0, -2, 0)
     bot.turret.rotation.set(0, -0.5, 0)
+});
+
+const bot2 = new Tank(scene, tankModel, () => {
+    bot2.tankGroup.position.set(10, 0, 10)
+    bot2.tankGroup.rotation.set(0, 1, 0)
+    bot2.turret.rotation.set(0, -0.5, 0)
 });
 
 
@@ -57,6 +64,17 @@ function animate() {
     // Update the tank (and camera) position and movement
     if (tank) {
         tank.update(camera, clock); // Update the tank's movement and camera position
+        bot.update(clock); // Update the bot's position and bounding box
+        bot2.update(clock); // Update  bot 2 position and bounding box
+
+        if (tank.boundingBox.intersectsBox(bot.boundingBox)) {
+            console.log('Collision 1 detected!');
+            // Handle collision (e.g., stop movement or resolve overlap)
+        }
+        else if (tank.boundingBox.intersectsBox(bot2.boundingBox)) {
+            console.log('Collision 2 detected!');
+            // Handle collision (e.g., stop movement or resolve overlap)
+        }
     }
 
     renderer.render(scene, camera);

@@ -67,12 +67,7 @@ export function loadMapAssets(xmlFilePathData, scene) {
                 if (rectangle) {
                     // Set the position and rotation of the model
                     rectangle.position.set(position.x, position.y, position.z);
-                    if (modelName !== 'Tile 1x1') {
-                        rectangle.rotation.set(0, 0, rotationZ);
-                    }
-                    else {
-                        rectangle.rotation.set(0, 0, 0);
-                    }
+                    rectangle.rotation.set(0, 0, rotationZ);
                     // Add the rectangle to the scene
                     scene.add(rectangle);
 
