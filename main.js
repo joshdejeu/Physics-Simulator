@@ -4,9 +4,12 @@ import { Tank } from './gameSetUp/tank.js';
 import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
-import { loadMapAssets } from './gameSetUp/mapLoader.js';
+import { Octree } from 'three/examples/jsm/math/Octree.js';
 
 const scene = new THREE.Scene();
+const octree = new Octree();
+octree.fromGraphNode(scene); // Build octree from all objects in the scene
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const clock = new THREE.Clock(); // Create a new Clock instance
 const renderer = new THREE.WebGLRenderer();
@@ -58,23 +61,45 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Dynamic collision detection using Octree
+function updateCollisionDetection(tank, octree) {
+    // Update tank's bounding box
+    tank.boundingBox.setFromObject(tank.tankGroup);
+
+    // Query potential collisions
+    const potentialCollisions = octree.find(
+        tank.tankGroup.position, // Tank's position
+        5, // Search radius
+        true // Use bounding boxes for checking
+    );
+
+    for (const collisionObject of potentialCollisions) {
+        // Ensure the collisionObject has a bounding box
+        if (!collisionObject.boundingBox) {
+            collisionObject.boundingBox = new THREE.Box3().setFromObject(collisionObject);
+        }
+
+        // Check if tank's bounding box intersects with the collision object
+        if (tank.boundingBox.intersectsBox(collisionObject.boundingBox)) {
+            console.log('Collision detected with', collisionObject.name || collisionObject.id);
+        }
+    }
+}
+
+
 
 // Render loop
 function animate() {
-    // Update the tank (and camera) position and movement
-    if (tank) {
-        tank.update(camera, clock); // Update the tank's movement and camera position
-        bot.update(clock); // Update the bot's position and bounding box
-        bot2.update(clock); // Update  bot 2 position and bounding box
+    const deltaTime = clock.getDelta(); // Get the time since the last frame
 
-        if (tank.boundingBox.intersectsBox(bot.boundingBox)) {
-            console.log('Collision 1 detected!');
-            // Handle collision (e.g., stop movement or resolve overlap)
-        }
-        else if (tank.boundingBox.intersectsBox(bot2.boundingBox)) {
-            console.log('Collision 2 detected!');
-            // Handle collision (e.g., stop movement or resolve overlap)
-        }
+    if (tank) {
+        // Update tanks
+        tank.update(camera, clock); // User tank
+        bot.update(clock); // AI bot 1
+        bot2.update(clock); // AI bot 2
+
+        // Update collision detection for the user tank
+        updateCollisionDetection(tank, octree);
     }
 
     renderer.render(scene, camera);
