@@ -9,16 +9,16 @@ const turretRotationSpeed = 0.021;
 let labelRenderer;
 
 // Define camera track properties
-const trackRadius = 15; // Radius of the circular track
-const trackHeight = 3; // Height of the camera above the tank
+const trackRadius = 10; // Radius of the circular track
+const trackHeight = 1.75; // Height of the camera above the tank
 const cameraSmoothingX = 0.1;
 const cameraSmoothingZ = 0.1;
 
 
 const gravity = 9.81;  // in m/s^2
 const tankMass = 5000;  // in kg (adjust as needed)
-const maxAcceleration = 25;  // max acceleration in m/s^2
-const maxSpeed = 50;  // max speed in m/s
+const maxAcceleration = 10;  // max acceleration in m/s^2
+const maxSpeed = 15;  // max speed in m/s
 const friction = 0.95;  // friction factor (slows down tank when no input)
 
 const TankState = Object.freeze({
@@ -72,6 +72,8 @@ export class Tank {
         this.tankGroup = new THREE.Group();
         this.scene.add(this.tankGroup);
 
+        this.tankBar();
+
         // Load the hull and turret
         this.loadModel(modelAndTexture.hull, modelAndTexture.hull_texture, (hull) => {
             this.hull = hull;
@@ -89,7 +91,88 @@ export class Tank {
         // Create fixed text
         this.createText();
         this.textContent = '60';  // Initialize with some default value
+        this.fire();
     }
+
+    fire() {
+        this.fireEffect = new THREE.Group();
+
+        // Create a new geometry for the vertical line
+        const lineGeometry = new THREE.BufferGeometry();
+        const vertices2 = [];
+        vertices2.push(1, -1, 1); // Start from the circle (x, 0, y)
+        vertices2.push(1, 1, 1); // Go upwards (x, 5, y)
+
+        // Set the position attribute for the line
+        lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices2, 3));
+
+        const geometry = new THREE.CylinderGeometry(0.1, 0.1, 100, 3); // Small radius for line thickness, height for line length
+        geometry.rotateX(Math.PI / 2);
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        // Create the line material and line
+        const line = new THREE.Mesh(geometry, material);
+        line.position.z -= 56;
+        // Position the cylinder at the correct point
+        this.fireEffect.add(line);
+
+
+        this.fireEffect.position.set(this.tankGroup.position.x, this.tankGroup.position.y + 2, this.tankGroup.position.z + 2);
+        this.scene.add(this.fireEffect);
+    }
+
+    updateFire() {
+        if(this.tankGroup?.children[1]?.children[0])
+        {
+            const test = this.tankGroup.children[1].children[0].position;
+            this.fireEffect.position.set(test);
+        }
+    }
+
+    tankBar() {
+        // Create the health bar container
+        this.barContainer = new THREE.Group();
+
+
+        // Create the inner bar
+        const outterBarGeometry = new THREE.PlaneGeometry(2, 0.07); // Initially set to full width
+        const outterBarMaterial = new THREE.MeshBasicMaterial({ color: 0x1cac10 }); // Green for health
+        const outterBar = new THREE.Mesh(outterBarGeometry, outterBarMaterial);
+        outterBar.position.z += 1.6;
+        this.barContainer.add(outterBar);
+        // Create the inner bar
+        const innerBarGeometry = new THREE.PlaneGeometry(2, 0.07); // Initially set to full width
+        const innerBarMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green for health
+        const innerBar = new THREE.Mesh(innerBarGeometry, innerBarMaterial);
+        innerBar.position.z += 1.601;
+        this.barContainer.add(innerBar);
+        this.scene.add(this.barContainer);
+        this.updateBars(this.tankGroup)
+        this.updateHealthBar(60);
+    }
+
+    updateBars(camera) {
+        this.barContainer.position.set(
+            this.tankGroup.position.x,
+            this.tankGroup.position.y + 1.5,
+            this.tankGroup.position.z)
+
+        this.barContainer.lookAt(camera.position);
+    }
+
+
+    // Function to update the inner bar based on health value (0 to 1)
+    updateHealthBar = function (healthValue) {
+        const newHealth = (parseFloat(healthValue) / 100);
+        // Get the inner bar mesh
+        const innerBar = this.barContainer.children[1];
+
+        // Update the width of the inner bar based on the health value (0 = left, 1 = right)
+        innerBar.scale.x = newHealth; // Multiply by 2 to match the full width of the outer bar
+
+        // Position the inner bar to shrink from right to left by adjusting the X position
+        innerBar.position.x = newHealth - 1; // Move left as the health decreases
+    };
+
 
     setupEventListeners() {
         // Set up event listeners for tank controls
@@ -225,6 +308,8 @@ export class Tank {
     }
 
     update(camera, clock) {
+        this.updateBars(camera);
+        this.updateFire();
         // Camera (position, rotation) based on turret rotation
         if (this.turret) {
             const turretRotation_radians = this.turret.rotation.y + this.tankGroup.rotation.y; // Turret rotation in radians
@@ -332,16 +417,16 @@ export class Tank {
         const maxTiltAngle = 0.1; // Maximum tilt angle in radians
         const tiltSpeed = 3; // Speed of tilt transition
         const damping = 2; // Damping factor for oscillation
-    
+
         // Calculate desired tilt based on acceleration
         const targetTilt = -maxTiltAngle * (acceleration / maxAcceleration);
-    
+
         // Smooth transition using damping
         const currentTilt = this.tankGroup.rotation.x; // Current pitch
         const tiltDelta = (targetTilt - currentTilt) * tiltSpeed * deltaTime;
-    
+
         this.tankGroup.rotation.x += tiltDelta;
-    
+
         // Apply damping to settle the tilt
         if (Math.abs(targetTilt - currentTilt) < 0.001) {
             this.tankGroup.rotation.x = 0; // Reset to neutral

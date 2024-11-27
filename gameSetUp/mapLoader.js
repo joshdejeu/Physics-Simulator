@@ -43,7 +43,7 @@ export function loadMapAssets(xmlFilePathData, scene) {
 
                 // Create the model using a rectangle
                 let rectangle = null;
-                console.log(modelName)
+                // console.log(modelName)
                 switch (modelName) {
                     case 'Tile 1x1':
                         rectangle = createRectangle(5, 0.1, 5, 0x8e8e8e);  // Tile 1x1 model (rectangle)
