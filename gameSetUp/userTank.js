@@ -365,13 +365,20 @@ class ScreenText {
 
 }
 
+
+
+
 export class UserTank extends Tank {
     constructor(scene, modelAndTexture, onLoadCallback) {
         super(scene, modelAndTexture, onLoadCallback); // Call the parent constructor
         this.keyboardHandler = new KeyboardHandler(this);
         this.screenText = new ScreenText(this);
     }
+
+
+
     update(camera, deltaTime) {
+        this.velocityLabel.update();
         this.deltaTime = deltaTime;
         if (this.hull) {
             this.boundingBox.setFromObject(this.hull);

@@ -22,14 +22,14 @@ export function loadModel(scene, modelFileName, position = { x: 0, y: 0, z: 0 },
             // });
 
             const texture = loadedTextures.details; // Assuming loadedTextures.details is your texture
-            texture.wrapS = THREE.RepeatWrapping; // Texture wrap (horizontal)
+            // texture.wrapS = THREE.RepeatWrapping; // Texture wrap (horizontal)
             texture.wrapT = THREE.RepeatWrapping; // Texture wrap (vertical)x
 
             // Optional: adjust the texture scale (this can help if your texture looks stretched)
             texture.repeat.set(1, -1);  // Repeat the texture (adjust the values if needed)
 
             // Optional: adjust the offset (useful if the texture is off-center)
-            texture.offset.set(0, 0); // You can change the offset values if needed (0.5, 0.5 for example)
+            // texture.offset.set(0, 0); // You can change the offset values if needed (0.5, 0.5 for example)
 
             // Optional: rotate the texture (if it's sideways)
             // texture.rotation = Math.PI; // Rotate 90 degrees (PI/2), change if needed

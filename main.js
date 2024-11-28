@@ -5,6 +5,7 @@ import { AiTank } from './gameSetUp/aiTank.js';
 import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
+import { loadMapAssets, loadTestMap } from './gameSetUp/mapLoader.js';
 import { Octree } from 'three/examples/jsm/math/Octree.js';
 
 const scene = new THREE.Scene();
@@ -21,6 +22,7 @@ document.body.appendChild(renderer.domElement);
 SetLighting(scene);
 // Add HDR background
 setBackground(scene, '/textures/skybox/skybox3.jpg');
+setBackground(scene);
 
 // const xmlFilePath = '/maps/map_stadium.xml';
 // loadMapAssets(xmlFilePath, scene).then(() => {
@@ -58,37 +60,35 @@ window.addEventListener('resize', () => {
 
 // Function to apply force when collision occurs
 function applyCollisionResponse(tank1, tank2, deltaTime) {
+    if (deltaTime < 1e-5) return; // Prevent division by zero or excessive force
+
     const relativeVelocity = tank2.tankVelocity.clone().sub(tank1.tankVelocity);
 
-    // Calculate the direction of the collision (vector from tank1 to tank2)
     const direction = tank2.tankGroup.position.clone().sub(tank1.tankGroup.position).normalize();
 
-    // Mass of the tanks (you can adjust this based on your simulation)
-    const mass1 = 5 || 1;  // Default to 1 if mass is not defined
-    const mass2 = 2 || 1;  // Default to 1 if mass is not defined
+    const mass1 = 5 || 1;
+    const mass2 = 2 || 1;
 
-    // Calculate the change in velocity during the collision
-    const velocityChange = relativeVelocity.dot(direction);  // How much velocity change happens in the direction of the impact
+    const velocityChange = relativeVelocity.dot(direction);
 
-    // If the velocity change is positive, then they are moving towards each other
     if (velocityChange > 0) {
-        // Calculate impulse based on momentum change (simplified physics, assume elastic collision)
-        const impulse = (2 * velocityChange) / (mass1 + mass2);  // Formula for impulse in 1D elastic collision
+        const restitution = 0.8; // Coefficient for inelastic collisions
+        const impulse = restitution * (2 * velocityChange) / (mass1 + mass2);
 
-        // Calculate the force magnitude based on impulse and the time of contact
-        const forceMagnitude = impulse / deltaTime;
+        const maxForce = 1000; // Cap force magnitude
+        const forceMagnitude = Math.min(impulse / deltaTime, maxForce);
 
-        // Apply the force to both tanks (simplified physics, applying equal and opposite forces)
         const force = direction.multiplyScalar(forceMagnitude);
 
-        // Update the velocities of both tanks (simplified)
-        tank1.tankVelocity.sub(force.clone().divideScalar(mass1));  // Apply force to tank1 (negative direction)
-        tank2.tankVelocity.add(force.clone().divideScalar(mass2));  // Apply force to tank2 (positive direction)
+        tank1.tankVelocity.sub(force.clone().divideScalar(mass1));
+        tank2.tankVelocity.add(force.clone().divideScalar(mass2));
 
-        // Log the applied force for debugging
-        console.log("Force applied:", force);
+        console.log("Collision Applied - Force:", force);
+        console.log("After Collision - Tank1 Velocity:", tank1.tankVelocity);
+        console.log("After Collision - Tank2 Velocity:", tank2.tankVelocity);
     }
 }
+
 
 
 // Render loop
@@ -109,9 +109,7 @@ function animate() {
 
         if (tank.boundingBox.intersectsBox(ai.boundingBox)) {
             // Handle collision
-            console.log('test')
             applyCollisionResponse(tank, ai, deltaTime)
-
         }
         // Update collision detection for the user tank
         // updateCollisionDetection(tank, octree);

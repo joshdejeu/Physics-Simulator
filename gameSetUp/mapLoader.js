@@ -85,3 +85,14 @@ export function loadMapAssets(xmlFilePathData, scene) {
         throw error;
     });
 }
+
+
+export function loadTestMap(scene){
+    const rectangle = createRectangle(50, 0.1, 50, 0x8e8e8e);  // Tile 1x1 model (rectangle)
+
+    rectangle.material = new THREE.MeshStandardMaterial({
+        map: "/textures/missing.jpg",
+    });
+    rectangle.position.set(0, -0.1, 0)
+    scene.add(rectangle);
+}
