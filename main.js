@@ -1,5 +1,6 @@
 // THREE.js setup for scene, camera, and renderer
 import * as THREE from 'three';
+import { Tank } from './gameSetUp/tank.js';
 import { AiTank } from './gameSetUp/aiTank.js';
 import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
@@ -62,11 +63,13 @@ function applyCollisionResponse(tank1, tank2) {
     const direction = tank2.position.clone().sub(tank1.position).normalize();
 
     // Apply a simple force based on this direction (scaled by the mass of the tanks)
-    const forceMagnitude = 10; // Adjust this based on how strong you want the push to be
+    const forceMagnitude = 1; // Adjust this based on how strong you want the push to be
     const force = direction.multiplyScalar(forceMagnitude);
 
     // Apply the force to tank2's velocity (simplified physics)
-    // tank2.velocity.add(force);
+    tank2.position.x += (force.x);
+    tank2.position.y += (force.y);
+    tank2.position.z += (force.z);
     console.log(force)
 
 }
