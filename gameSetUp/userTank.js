@@ -72,13 +72,13 @@ class Controller_Hull {
     handleKeyUp(event) {
         // Movement controls
         if (MovementKeys.FORWARD.includes(event.key)) {
-            if(!this.tank.activeStates.has(TankState.DECELERATING)){
+            if (!this.tank.activeStates.has(TankState.DECELERATING)) {
                 this.tank.setState([TankState.IDLE])
             }
             this.tank.activeStates.delete(TankState.ACCELERATING);
         }
         if (MovementKeys.BACKWARD.includes(event.key)) {
-            if(!this.tank.activeStates.has(TankState.ACCELERATING)){
+            if (!this.tank.activeStates.has(TankState.ACCELERATING)) {
                 this.tank.setState([TankState.IDLE])
             }
             this.tank.activeStates.delete(TankState.DECELERATING);
@@ -102,40 +102,53 @@ class Controller_Hull {
     }
     // Smooths the acceleration and deceleration of forward and backward movement
     accelerationSmoothing(deltaTime) {
-        let acceleration = 0;
+        let acceleration = new THREE.Vector3(0, 0, 0); // Vector for acceleration
 
         // Handle acceleration or deceleration
         if (this.tank.activeStates.has(TankState.ACCELERATING)) {
-            acceleration = -TankConfig.maxAcceleration;
-            this.tank.tankVelocity = Math.min(this.tank.tankVelocity + (TankConfig.maxAcceleration * deltaTime), TankConfig.maxSpeed);
+            // Accelerating in the forward direction (along the tank's rotation direction)
+            acceleration.set(
+                -Math.sin(this.tank.tankGroup.rotation.y) * TankConfig.maxAcceleration,
+                0,
+                -Math.cos(this.tank.tankGroup.rotation.y) * TankConfig.maxAcceleration
+            );
+            this.tank.tankVelocity.addScaledVector(acceleration, deltaTime); // Update velocity
+            this.tank.tankVelocity.clampLength(0, TankConfig.maxSpeed); // Clamp the speed
         } else if (this.tank.activeStates.has(TankState.DECELERATING)) {
-            acceleration = TankConfig.maxAcceleration;
-            this.tank.tankVelocity = Math.max(this.tank.tankVelocity - (TankConfig.maxAcceleration * deltaTime), -TankConfig.maxSpeed);
+            // Decelerating in the opposite direction
+            acceleration.set(
+                Math.sin(this.tank.tankGroup.rotation.y) * TankConfig.maxAcceleration,
+                0,
+                Math.cos(this.tank.tankGroup.rotation.y) * TankConfig.maxAcceleration
+            );
+            this.tank.tankVelocity.addScaledVector(acceleration, deltaTime); // Update velocity
+            this.tank.tankVelocity.clampLength(0, TankConfig.maxSpeed); // Clamp the speed
         } else if (this.tank.activeStates.has(TankState.IDLE)) {
-            // Gradual slowdown due to friction, but make sure the tank doesn't stop abruptly
-            if (Math.abs(this.tank.tankVelocity) < 0.1) {
-                this.tank.tankVelocity = 0;
+            // Gradual slowdown due to friction
+            if (this.tank.tankVelocity.length() < 0.1) {
+                this.tank.tankVelocity.set(0, 0, 0); // Stop if the velocity is very low
             } else {
-                this.tank.tankVelocity *= TankConfig.friction; // Apply friction smoothly
+                this.tank.tankVelocity.multiplyScalar(TankConfig.friction); // Apply friction
             }
         }
 
-        // Calculate position update
-        const dx = Math.sin(this.tank.tankGroup.rotation.y) * this.tank.tankVelocity * deltaTime;
-        const dz = Math.cos(this.tank.tankGroup.rotation.y) * this.tank.tankVelocity * deltaTime;
+        // Calculate position update based on velocity
+        const dx = this.tank.tankVelocity.x * deltaTime;
+        const dz = this.tank.tankVelocity.z * deltaTime;
 
         // Gravity effect on y-axis
         const gravityForce = -TankConfig.gravity * deltaTime;
         const dy = this.calculateVerticalShift(gravityForce);
 
         // Update tank position
-        this.tank.tankGroup.position.x -= dx;
-        this.tank.tankGroup.position.z -= dz;
+        this.tank.tankGroup.position.x += dx;
+        this.tank.tankGroup.position.z += dz;
         this.tank.tankGroup.position.y += dy; // Adjust for terrain or jumps
 
-        // Apply weight shift (tilt) dynamics
+        // Optionally apply weight shift (tilt dynamics)
         // this.applyWeightShift(acceleration, deltaTime);
     }
+
     // Tilts tank based on center of mass when accelerating
     simulateWeightTransfer(deltaTime) {
         // not accounting for vector change in new axis
@@ -338,10 +351,18 @@ class ScreenText {
 
     // Function to update the text content
     update() {
-        // Example: Update text content with current speed (for example)
-        this.textContent = Math.round(this.tank.tankVelocity); // Update the text content with current speed
-        if (this.textDiv) this.textDiv.textContent = this.textContent;  // Update the actual text element in the DOM
+        // Calculate the magnitude (speed) of the tank's velocity vector
+        const speed = this.tank.tankVelocity.length();  // This gives the speed (magnitude) of the velocity vector
+
+        // Round the speed to make it more readable (you can choose the number of decimals)
+        this.textContent = Math.round(speed);
+
+        // Update the text content in the DOM element (if it exists)
+        if (this.textDiv) {
+            this.textDiv.textContent = this.textContent;  // Set the speed as the text content
+        }
     }
+
 }
 
 export class UserTank extends Tank {
@@ -349,7 +370,6 @@ export class UserTank extends Tank {
         super(scene, modelAndTexture, onLoadCallback); // Call the parent constructor
         this.keyboardHandler = new KeyboardHandler(this);
         this.screenText = new ScreenText(this);
-        this.tankVelocity = 0;
     }
     update(camera, deltaTime) {
         this.deltaTime = deltaTime;

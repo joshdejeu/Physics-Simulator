@@ -28,6 +28,7 @@ export class Tank {
         this.activeStates.add(TankState.IDLE)
         this.hull = null;
         this.turret = null;
+        this.tankVelocity = new THREE.Vector3(0, 0, 0);
 
         // Load the hull and turret
         this.initializeTankModel(modelAndTexture, onLoadCallback);
