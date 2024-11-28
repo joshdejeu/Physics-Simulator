@@ -197,13 +197,20 @@ export class Tank {
         // }
     }
 
-    update(clock) {
+    update(deltaTime) {
         this.velocityLabel.update();
         if (this.hull) {
             this.boundingBox.setFromObject(this.hull);
             const boxHelper = new THREE.Box3Helper(this.boundingBox, 0xffff00); // The color is optional, here it's yellow
             this.scene.add(boxHelper);
         }
+        // Update position based on velocity
+        const friction = 0.98; // Simulate friction or drag to slow down
+        this.tankVelocity.multiplyScalar(friction); // Reduce velocity gradually
+        // Apply velocity to tank's position
+        this.tankGroup.position.add(this.tankVelocity.clone().multiplyScalar(deltaTime));
+
+
         // const deltaTime = clock.getDelta();
     }
 

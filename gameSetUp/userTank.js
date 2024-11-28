@@ -11,8 +11,8 @@ const TankConfig = {
     turretRotationSpeed: 0.021,
     gravity: 9.81, // in m/s^2
     mass: 5000, // in kg 
-    maxAcceleration: 15, // max acceleration in m/s^2
-    maxSpeed: 15, // max speed in m/s
+    maxAcceleration: 50, // max acceleration in m/s^2
+    maxSpeed: 100, // max speed in m/s
     friction: 0.96, // friction factor (slows down tank when no input)
     weightShiftFactor: 0.1,
 };

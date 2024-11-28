@@ -66,8 +66,8 @@ function applyCollisionResponse(tank1, tank2, deltaTime) {
 
     const direction = tank2.tankGroup.position.clone().sub(tank1.tankGroup.position).normalize();
 
-    const mass1 = 5 || 1;
-    const mass2 = 2 || 1;
+    const mass1 = 5;
+    const mass2 = 2;
 
     const velocityChange = relativeVelocity.dot(direction);
 
@@ -75,7 +75,7 @@ function applyCollisionResponse(tank1, tank2, deltaTime) {
         const restitution = 0.8; // Coefficient for inelastic collisions
         const impulse = restitution * (2 * velocityChange) / (mass1 + mass2);
 
-        const maxForce = 1000; // Cap force magnitude
+        const maxForce = 5; // Cap force magnitude
         const forceMagnitude = Math.min(impulse / deltaTime, maxForce);
 
         const force = direction.multiplyScalar(forceMagnitude);
