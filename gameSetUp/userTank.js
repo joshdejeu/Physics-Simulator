@@ -352,12 +352,12 @@ export class UserTank extends Tank {
         this.tankVelocity = 0;
     }
     update(camera, deltaTime) {
+        this.deltaTime = deltaTime;
         if (this.hull) {
             this.boundingBox.setFromObject(this.hull);
             const boxHelper = new THREE.Box3Helper(this.boundingBox, 0xffff00); // The color is optional, here it's yellow
             this.scene.add(boxHelper);
         }
-        this.deltaTime = deltaTime;
         this.keyboardHandler.update(camera); // hull and turret movement
         this.screenText.update();
 

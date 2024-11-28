@@ -1,11 +1,10 @@
 // THREE.js setup for scene, camera, and renderer
 import * as THREE from 'three';
-import { Tank } from './gameSetUp/tank.js';
+import { AiTank } from './gameSetUp/aiTank.js';
 import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
 import { Octree } from 'three/examples/jsm/math/Octree.js';
-import { sqrt } from 'three/webgpu';
 
 const scene = new THREE.Scene();
 const octree = new Octree();
@@ -42,10 +41,10 @@ const tank = new UserTank(scene, tankModel, () => {
     camera.lookAt(tank.tankGroup.position); // Set camera to look at the tank's position
 });
 
-const bot = new Tank(scene, tankModel, () => {
-    bot.tankGroup.position.set(0, 0, -10)
-    bot.tankGroup.rotation.set(0, 3 * Math.PI / 2, 0)
-    bot.turret.rotation.set(0, -0.5, 0)
+const ai = new AiTank(scene, tankModel, () => {
+    ai.tankGroup.position.set(0, 0, -10)
+    ai.tankGroup.rotation.set(0, 3 * Math.PI / 2, 0)
+    ai.turret.rotation.set(0, -0.5, 0)
 });
 
 
@@ -56,30 +55,6 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Dynamic collision detection using Octree
-function updateCollisionDetection(tank, octree) {
-    // Update tank's bounding box
-    tank.boundingBox.setFromObject(tank.tankGroup);
-
-    // Query potential collisions
-    // const potentialCollisions = octree.find(
-    //     tank.tankGroup.position, // Tank's position
-    //     5, // Search radius
-    //     true // Use bounding boxes for checking
-    // );
-
-    // for (const collisionObject of potentialCollisions) {
-    //     // Ensure the collisionObject has a bounding box
-    //     if (!collisionObject.boundingBox) {
-    //         collisionObject.boundingBox = new THREE.Box3().setFromObject(collisionObject);
-    //     }
-
-    //     // Check if tank's bounding box intersects with the collision object
-    //     if (tank.boundingBox.intersectsBox(collisionObject.boundingBox)) {
-    //         console.log('Collision detected with', collisionObject.name || collisionObject.id);
-    //     }
-    // }
-}
 
 // Function to apply force when collision occurs
 function applyCollisionResponse(tank1, tank2) {
@@ -103,12 +78,19 @@ function animate() {
     if (tank) {
         // Update tanks
         tank.update(camera, deltaTime); // User tank
-        bot.update(clock); // AI bot 1
+        ai.update(deltaTime); // AI bot 1
 
-        if (tank.boundingBox.intersectsBox(bot.boundingBox)) {
+        if (tank.boundingBox.intersectsBox(ai.boundingBox)) {
             // Handle collision
-            applyCollisionResponse(tank.tankGroup, bot.tankGroup)
+            applyCollisionResponse(tank.tankGroup, ai.tankGroup)
             
+        }
+
+        if(ai.turret){
+            ai.turret.lookAt(tank.tankGroup.position)
+            ai.turret.rotation.y += Math.PI; // Rotate by 180 degrees (PI radians)
+            ai.turret.rotation.x = 0;
+            ai.turret.rotation.z = 0;
         }
 
         // Update collision detection for the user tank
