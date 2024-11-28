@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { Tank } from './tank.js';
+import { TankState } from './tank.js';
 
 let labelRenderer;
 
@@ -13,6 +14,7 @@ const TankConfig = {
     maxAcceleration: 15, // max acceleration in m/s^2
     maxSpeed: 15, // max speed in m/s
     friction: 0.96, // friction factor (slows down tank when no input)
+    weightShiftFactor: 0.1,
 };
 
 const CameraConfig = {
@@ -21,15 +23,7 @@ const CameraConfig = {
     smoothing: { x: 0.1, z: 0.1 },
 };
 
-const TankState = Object.freeze({
-    IDLE: 'idle',
-    ACCELERATING: 'accelerating',
-    DECELERATING: 'decelerating',
-    //other
-    TURNING: 'turning',
-    BRAKING: 'braking',
-    STALLED: 'stalled',
-});
+
 
 const MovementKeys = {
     FORWARD: ['w', 'ArrowUp'],
@@ -61,35 +55,39 @@ class Controller_Hull {
     handleKeyDown(event) {
         // Movement controls [forward, backward, left, right]
         if (MovementKeys.FORWARD.includes(event.key)) {
-            this.tank.hullControl.forward = true;
-            this.tank.setState(TankState.ACCELERATING);
+            this.tank.activeStates.delete(TankState.IDLE);
+            this.tank.setState([TankState.ACCELERATING]);
         }
         if (MovementKeys.BACKWARD.includes(event.key)) {
-            this.tank.hullControl.backward = true;
-            this.tank.setState(TankState.DECELERATING);
+            this.tank.activeStates.delete(TankState.IDLE);
+            this.tank.setState([TankState.DECELERATING]);
         }
         if (MovementKeys.LEFT.includes(event.key)) {
-            this.tank.hullControl.left = true;
+            this.tank.setState([TankState.TURNING_LEFT])
         }
         if (MovementKeys.RIGHT.includes(event.key)) {
-            this.tank.hullControl.right = true;
+            this.tank.setState([TankState.TURNING_RIGHT])
         }
     }
     handleKeyUp(event) {
         // Movement controls
         if (MovementKeys.FORWARD.includes(event.key)) {
-            this.tank.hullControl.forward = false;
-            this.tank.updateMovementState();
+            if(!this.tank.activeStates.has(TankState.DECELERATING)){
+                this.tank.setState([TankState.IDLE])
+            }
+            this.tank.activeStates.delete(TankState.ACCELERATING);
         }
         if (MovementKeys.BACKWARD.includes(event.key)) {
-            this.tank.hullControl.backward = false;
-            this.tank.updateMovementState();
+            if(!this.tank.activeStates.has(TankState.ACCELERATING)){
+                this.tank.setState([TankState.IDLE])
+            }
+            this.tank.activeStates.delete(TankState.DECELERATING);
         }
         if (MovementKeys.LEFT.includes(event.key)) {
-            this.tank.hullControl.left = false;
+            this.tank.activeStates.delete(TankState.TURNING_LEFT);
         }
         if (MovementKeys.RIGHT.includes(event.key)) {
-            this.tank.hullControl.right = false;
+            this.tank.activeStates.delete(TankState.TURNING_RIGHT);
         }
     }
     calculateVerticalShift(gravityForce) {
@@ -107,13 +105,13 @@ class Controller_Hull {
         let acceleration = 0;
 
         // Handle acceleration or deceleration
-        if (this.tank.state === TankState.ACCELERATING) {
+        if (this.tank.activeStates.has(TankState.ACCELERATING)) {
             acceleration = -TankConfig.maxAcceleration;
             this.tank.tankVelocity = Math.min(this.tank.tankVelocity + (TankConfig.maxAcceleration * deltaTime), TankConfig.maxSpeed);
-        } else if (this.tank.state === TankState.DECELERATING) {
+        } else if (this.tank.activeStates.has(TankState.DECELERATING)) {
             acceleration = TankConfig.maxAcceleration;
             this.tank.tankVelocity = Math.max(this.tank.tankVelocity - (TankConfig.maxAcceleration * deltaTime), -TankConfig.maxSpeed);
-        } else if (this.tank.state === TankState.IDLE) {
+        } else if (this.tank.activeStates.has(TankState.IDLE)) {
             // Gradual slowdown due to friction, but make sure the tank doesn't stop abruptly
             if (Math.abs(this.tank.tankVelocity) < 0.1) {
                 this.tank.tankVelocity = 0;
@@ -138,16 +136,34 @@ class Controller_Hull {
         // Apply weight shift (tilt) dynamics
         // this.applyWeightShift(acceleration, deltaTime);
     }
+    // Tilts tank based on center of mass when accelerating
+    simulateWeightTransfer(deltaTime) {
+        // not accounting for vector change in new axis
+        // let tilt = 0;
+        // // Hard braking (forward weight shift)
+        // if (this.tank.activeStates === TankState.DECELERATING) {
+        //     tilt = Math.min(this.tank.tankVelocity / TankConfig.maxSpeed, 1) * TankConfig.weightShiftFactor;
+        // }
+
+        // // Hard acceleration (backward weight shift)
+        // else if (this.tank.activeStates === TankState.ACCELERATING) {
+        //     tilt = -Math.min(this.tank.tankVelocity / TankConfig.maxSpeed, 1) * TankConfig.weightShiftFactor;
+        // }
+
+        // // Apply the tilt to the tank's rotation (around the X-axis)
+        // this.tank.tankGroup.rotation.x = tilt;
+    }
     update() {
         // Hull (rotation)
-        if (this.tank.hullControl.left) {
+        if (this.tank.activeStates.has(TankState.TURNING_LEFT)) {
             this.tank.tankGroup.rotation.y += TankConfig.hullRotationSpeed;
         }
-        if (this.tank.hullControl.right) {
+        if (this.tank.activeStates.has(TankState.TURNING_RIGHT)) {
             this.tank.tankGroup.rotation.y -= TankConfig.hullRotationSpeed;
         }
         // Hull (movement)
         this.accelerationSmoothing(this.tank.deltaTime);
+        // this.simulateWeightTransfer(this.tank.deltaTime);
     }
 }
 // Handles all turret movement from keyboard inputs
@@ -241,7 +257,6 @@ class Controller_Camera {
         if (this.cameraControl.down) this.cameraOffset.y -= 0.1
     }
 }
-
 // Handles all keyboard inputs for all tank functionality
 class KeyboardHandler {
     constructor(tank) {
@@ -267,6 +282,7 @@ class KeyboardHandler {
         // Self-destruct
         if (TankKeys.SELF_DESTRUCT.includes(event.key)) {
             this.tank.tankGroup.position.set(0, 0, 0)
+            this.tank.tankGroup.rotation.set(0, 0, 0)
         }
     }
 
@@ -289,7 +305,6 @@ class KeyboardHandler {
     }
 
 }
-
 // Renders speed, health, inventory, etc
 class ScreenText {
     constructor(tank) {
@@ -337,6 +352,11 @@ export class UserTank extends Tank {
         this.tankVelocity = 0;
     }
     update(camera, deltaTime) {
+        if (this.hull) {
+            this.boundingBox.setFromObject(this.hull);
+            const boxHelper = new THREE.Box3Helper(this.boundingBox, 0xffff00); // The color is optional, here it's yellow
+            this.scene.add(boxHelper);
+        }
         this.deltaTime = deltaTime;
         this.keyboardHandler.update(camera); // hull and turret movement
         this.screenText.update();

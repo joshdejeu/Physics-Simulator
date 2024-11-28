@@ -5,6 +5,7 @@ import { UserTank } from './gameSetUp/userTank.js';
 import { SetLighting } from './gameSetUp/lighting.js';
 import { setBackground } from './gameSetUp/skyBackground.js';
 import { Octree } from 'three/examples/jsm/math/Octree.js';
+import { sqrt } from 'three/webgpu';
 
 const scene = new THREE.Scene();
 const octree = new Octree();
@@ -42,15 +43,9 @@ const tank = new UserTank(scene, tankModel, () => {
 });
 
 const bot = new Tank(scene, tankModel, () => {
-    bot.tankGroup.position.set(-10, 0, -10)
-    bot.tankGroup.rotation.set(0, -2, 0)
+    bot.tankGroup.position.set(0, 0, -10)
+    bot.tankGroup.rotation.set(0, 3 * Math.PI / 2, 0)
     bot.turret.rotation.set(0, -0.5, 0)
-});
-
-const bot2 = new Tank(scene, tankModel, () => {
-    bot2.tankGroup.position.set(10, 0, 10)
-    bot2.tankGroup.rotation.set(0, 1, 0)
-    bot2.turret.rotation.set(0, -0.5, 0)
 });
 
 
@@ -86,7 +81,20 @@ function updateCollisionDetection(tank, octree) {
     // }
 }
 
+// Function to apply force when collision occurs
+function applyCollisionResponse(tank1, tank2) {
+    // Find the direction of the collision (vector from tank1 to tank2)
+    const direction = tank2.position.clone().sub(tank1.position).normalize();
 
+    // Apply a simple force based on this direction (scaled by the mass of the tanks)
+    const forceMagnitude = 10; // Adjust this based on how strong you want the push to be
+    const force = direction.multiplyScalar(forceMagnitude);
+
+    // Apply the force to tank2's velocity (simplified physics)
+    // tank2.velocity.add(force);
+    console.log(force)
+
+}
 
 // Render loop
 function animate() {
@@ -95,11 +103,16 @@ function animate() {
     if (tank) {
         // Update tanks
         tank.update(camera, deltaTime); // User tank
-        // bot.update(clock); // AI bot 1
-        // bot2.update(clock); // AI bot 2
+        bot.update(clock); // AI bot 1
+
+        if (tank.boundingBox.intersectsBox(bot.boundingBox)) {
+            // Handle collision
+            applyCollisionResponse(tank.tankGroup, bot.tankGroup)
+            
+        }
 
         // Update collision detection for the user tank
-        updateCollisionDetection(tank, octree);
+        // updateCollisionDetection(tank, octree);
     }
 
     renderer.render(scene, camera);

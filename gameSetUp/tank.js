@@ -8,32 +8,30 @@ const maxAcceleration = 25;  // max acceleration in m/s^2
 const maxSpeed = 50;  // max speed in m/s
 const friction = 0.96;  // friction factor (slows down tank when no input)
 
-const TankState = Object.freeze({
+export const TankState = Object.freeze({
     IDLE: 'idle',
     ACCELERATING: 'accelerating',
     DECELERATING: 'decelerating',
+    TURNING_LEFT: "turning_left",
+    TURNING_RIGHT: "turning_right",
     //other
-    TURNING: 'turning',
     BRAKING: 'braking',
     STALLED: 'stalled',
 });
 
-
-
 export class Tank {
     constructor(scene, modelAndTexture, onLoadCallback) {
         this.tankGroup = new THREE.Group(); // Create a group to combine hull and turret
-        this.hullControl = { forward: false, backward: false, left: false, right: false };
         this.turretControl = { left: false, right: false, center: false };
         this.scene = scene; // The space in which models get placed in
-        this.state = TankState.IDLE;
+        this.activeStates = new Set(); // Store active states in a set to handle multiple states
+        this.activeStates.add(TankState.IDLE)
         this.hull = null;
         this.turret = null;
 
         // Load the hull and turret
         this.initializeTankModel(modelAndTexture, onLoadCallback);
-        
-        // Create a bounding box for the tank (collisions)
+        // Create a bounding box for the hull ONLY (collisions)
         this.boundingBox = new THREE.Box3().setFromObject(this.tankGroup);
         this.scene.add(this.tankGroup);
     }
@@ -58,22 +56,41 @@ export class Tank {
         );
     }
 
-    // Sets and handles state changes
-    setState(newState) {
-        if (this.setState !== newState) {
-            this.state = newState;
-            switch (this.state) {
-                case TankState.ACCELERATING:
-                    this.handleAcceleratingState();
-                    break;
-                case TankState.DECELERATING:
-                    this.handleDeceleratingState();
-                    break;
-                case TankState.IDLE:
-                    this.handleIdleState();
-                    break;
-            }
+    // Add states to the activeStates set
+    setState(newStates) {
+        if (Array.isArray(newStates)) {
+            newStates.forEach((state) => this.activeStates.add(state));
+        } else {
+            this.activeStates.add(newStates);
         }
+
+        this.updateState();
+    }
+
+    // Update the state by processing each active state
+    updateState() {
+        // For each active state, run the corresponding handler
+        if (this.activeStates.has(TankState.ACCELERATING)) {
+            this.handleAcceleratingState();
+        }
+
+        if (this.activeStates.has(TankState.DECELERATING)) {
+            this.handleDeceleratingState();
+        }
+
+        if (this.activeStates.has(TankState.TURNING_LEFT)) {
+            this.handleTurningState();
+        }
+
+        if (this.activeStates.has(TankState.TURNING_RIGHT)) {
+            this.handleTurningState();
+        }
+
+        if (this.activeStates.has(TankState.IDLE)) {
+            this.handleIdleState();
+        }
+
+        // Add more state handlers as needed
     }
 
     handleAcceleratingState() {
@@ -86,6 +103,11 @@ export class Tank {
         // Add specific logic for deceleration here
     }
 
+    handleTurningState() {
+        console.log('Tank is turning');
+        // Add specific logic for turning here
+    }
+
     handleIdleState() {
         console.log('Tank is idle');
         // Add specific logic for idle here
@@ -93,19 +115,23 @@ export class Tank {
 
     // Function to update the tank's movement state
     updateMovementState() {
-        if (this.hullControl.forward && this.hullControl.backward) {
-            this.setState(TankState.IDLE); // or a specific state for conflicting input
-        } else if (this.hullControl.forward) {
-            this.setState(TankState.ACCELERATING);
-        } else if (this.hullControl.backward) {
-            this.setState(TankState.DECELERATING);
-        } else {
-            this.setState(TankState.IDLE);
-        }
+        // if (this.hullControl.forward && this.hullControl.backward) {
+        //     this.setState(TankState.IDLE); // or a specific state for conflicting input
+        // } else if (this.hullControl.forward) {
+        //     this.setState(TankState.ACCELERATING);
+        // } else if (this.hullControl.backward) {
+        //     this.setState(TankState.DECELERATING);
+        // } else {
+        //     this.setState(TankState.IDLE);
+        // }
     }
 
     update(clock) {
-        this.boundingBox.setFromObject(this.tankGroup);
+        if (this.hull) {
+            this.boundingBox.setFromObject(this.hull);
+            const boxHelper = new THREE.Box3Helper(this.boundingBox, 0xffff00); // The color is optional, here it's yellow
+            this.scene.add(boxHelper);
+        }
         // const deltaTime = clock.getDelta();
     }
 
@@ -113,29 +139,4 @@ export class Tank {
         // Clean up resources
         this.scene.remove(this.tankGroup);
     }
-
-
-
-    applyWeightShift(acceleration, deltaTime) {
-        // Simulate weight shift based on acceleration
-        const maxTiltAngle = 0.1; // Maximum tilt angle in radians
-        const tiltSpeed = 3; // Speed of tilt transition
-        const damping = 2; // Damping factor for oscillation
-
-        // Calculate desired tilt based on acceleration
-        const targetTilt = -maxTiltAngle * (acceleration / maxAcceleration);
-
-        // Smooth transition using damping
-        const currentTilt = this.tankGroup.rotation.x; // Current pitch
-        const tiltDelta = (targetTilt - currentTilt) * tiltSpeed * deltaTime;
-
-        this.tankGroup.rotation.x += tiltDelta;
-
-        // Apply damping to settle the tilt
-        if (Math.abs(targetTilt - currentTilt) < 0.001) {
-            this.tankGroup.rotation.x = 0; // Reset to neutral
-        }
-    }
-
-
 }
