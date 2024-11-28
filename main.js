@@ -67,23 +67,23 @@ function updateCollisionDetection(tank, octree) {
     tank.boundingBox.setFromObject(tank.tankGroup);
 
     // Query potential collisions
-    const potentialCollisions = octree.find(
-        tank.tankGroup.position, // Tank's position
-        5, // Search radius
-        true // Use bounding boxes for checking
-    );
+    // const potentialCollisions = octree.find(
+    //     tank.tankGroup.position, // Tank's position
+    //     5, // Search radius
+    //     true // Use bounding boxes for checking
+    // );
 
-    for (const collisionObject of potentialCollisions) {
-        // Ensure the collisionObject has a bounding box
-        if (!collisionObject.boundingBox) {
-            collisionObject.boundingBox = new THREE.Box3().setFromObject(collisionObject);
-        }
+    // for (const collisionObject of potentialCollisions) {
+    //     // Ensure the collisionObject has a bounding box
+    //     if (!collisionObject.boundingBox) {
+    //         collisionObject.boundingBox = new THREE.Box3().setFromObject(collisionObject);
+    //     }
 
-        // Check if tank's bounding box intersects with the collision object
-        if (tank.boundingBox.intersectsBox(collisionObject.boundingBox)) {
-            console.log('Collision detected with', collisionObject.name || collisionObject.id);
-        }
-    }
+    //     // Check if tank's bounding box intersects with the collision object
+    //     if (tank.boundingBox.intersectsBox(collisionObject.boundingBox)) {
+    //         console.log('Collision detected with', collisionObject.name || collisionObject.id);
+    //     }
+    // }
 }
 
 
@@ -94,9 +94,9 @@ function animate() {
 
     if (tank) {
         // Update tanks
-        tank.update(camera, clock); // User tank
-        bot.update(clock); // AI bot 1
-        bot2.update(clock); // AI bot 2
+        tank.update(camera, deltaTime); // User tank
+        // bot.update(clock); // AI bot 1
+        // bot2.update(clock); // AI bot 2
 
         // Update collision detection for the user tank
         updateCollisionDetection(tank, octree);
